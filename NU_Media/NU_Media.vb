@@ -31,7 +31,8 @@ Public Class NU_Media
     Dim EnableSignLine2, LotOpenMessageLine2, AddLotnamewithLotOpenMessageLine2, LotFullMessageLine2, SendProtocolPrefixLine2, SendProtocolSufixLine2 As String     'Sign Line-2 parameter setup
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
-    Dim CarloGavazzi As Boolean
+    Dim CarloGavazzi As Boolean 'Carlo Gavazzi parameter Setup'
+    Dim ReadDelay As Integer 'Carlo Gavazzi parameter Setup'
     Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
@@ -78,7 +79,11 @@ Public Class NU_Media
             CheckOpenComPorts() 'Check Comport followed by ping to determine which Signs are online
 
             StartApplication() 'Start application - which will start the  timer
-            CG_Connect()
+            If CarloGavazzi Then
+                Task.Run(Async Function()
+                             Await CG_Read(cancellationToken)
+                         End Function)
+            End If
         Catch ex As Exception
             Log("Error from NU_Media_Load Function-->" & ex.Message)
         End Try
@@ -480,46 +485,47 @@ Public Class NU_Media
 
     Public Sub CG_Connect()
 
-        If CarloGavazzi Then
-            Task.Run(Async Function()
-                         Await CG_Read(cancellationToken)
-                     End Function)
+
+        Dim CGResult As WSMBT.Result
+        WsmbtControl1.LicenseKey("356D-9FEA-7E14-6F9D-0569-FBA0")
+        WsmbtControl1.Mode = WSMBT.Mode.TCP_IP
+        WsmbtControl1.ConnectTimeout = 1000
+        WsmbtControl1.ResponseTimeout = 1000
+        CGResult = WsmbtControl1.Connect(Modbus_TCP_IP, Modbus_TCP_Port)
+
+        If CGResult <> WSMBT.Result.SUCCESS Then
+
+            MessageBox.Show(WsmbtControl1.GetLastErrorString())
+            CGLog("Device Not Connected ")
+            If CGConnect.InvokeRequired Then
+                CGConnect.Invoke(Sub()
+                                     CGConnect.BackColor = Color.Red
+                                     CGConnect.Text = "Offline"
+                                 End Sub)
+            End If
+
+        Else
+            CGLog("Device Connected ")
+            If CGConnect.InvokeRequired Then
+                CGConnect.Invoke(Sub()
+                                     CGConnect.BackColor = Color.Lime
+                                     CGConnect.Text = "Online"
+                                 End Sub)
+            End If
+
         End If
 
     End Sub
 
     Public Async Function CG_Read(cancellationToken As CancellationToken) As Task
         While Not cancellationToken.IsCancellationRequested
-            Dim CGResult As WSMBT.Result
-            WsmbtControl1.LicenseKey("356D-9FEA-7E14-6F9D-0569-FBA0")
-            WsmbtControl1.Mode = WSMBT.Mode.TCP_IP
-            WsmbtControl1.ConnectTimeout = 1000
-            WsmbtControl1.ResponseTimeout = 1000
-            CGResult = WsmbtControl1.Connect(Modbus_TCP_IP, Modbus_TCP_Port)
 
-            If CGResult <> WSMBT.Result.SUCCESS Then
-
-                MessageBox.Show(WsmbtControl1.GetLastErrorString())
-                CGLog("Device Not Connected ")
-                If CGConnect.InvokeRequired Then
-                    CGConnect.Invoke(Sub()
-                                         CGConnect.BackColor = Color.Red
-                                         CGConnect.Text = "Offline"
-                                     End Sub)
-                End If
-
-            Else
-                CGLog("Device Connected ")
-                If CGConnect.InvokeRequired Then
-                    CGConnect.Invoke(Sub()
-                                         CGConnect.BackColor = Color.Lime
-                                         CGConnect.Text = "Online"
-                                     End Sub)
-                End If
-
-            End If
+            Await Task.Run(Sub() CG_Connect())
 
             Dim Registers(254) As Short
+            Dim logMessage As String = String.Empty ' Declare logMessage at the beginning of the method
+            Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
+            Dim delayInSeconds As Integer = 2
 
             ' Create a mapping of register numbers to labels
             Dim registerLabels As New Dictionary(Of Integer, String) From {
@@ -529,11 +535,7 @@ Public Class NU_Media
             {4015, "P"}
         }
 
-            ' Declare logMessage at the beginning of the method
-            Dim logMessage As String = String.Empty
 
-
-            Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
 
             Try
                 ' Loop through each slave (1 to 16)
@@ -607,7 +609,7 @@ Public Class NU_Media
             End Try
 
             Console.WriteLine("CG_Read is running")
-            Await Task.Delay(2000)
+            Await Task.Delay(delayInSeconds * 1000)
         End While
 
         Console.WriteLine("CG_Read has been stopped.")
@@ -900,7 +902,6 @@ SendtoDisplay:
             f.Show()
             f.Text = "PasswordCheck - Exit"
             f.Location = Me.Location
-            cancellationTokenSource.Cancel()
         Catch ex As Exception
             Log("Error from btnExit-->" & ex.Message)
         End Try
