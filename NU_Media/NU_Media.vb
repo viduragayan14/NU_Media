@@ -32,8 +32,7 @@ Public Class NU_Media
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
     Dim CarloGavazzi As Boolean 'Carlo Gavazzi parameter Setup'
-    Dim ReadDelay As Integer 'Carlo Gavazzi parameter Setup'
-    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount As String 'Carlo Gavazzi parameter Setup'
+    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
     ' Public logmessage, Startuplogmessage, Arrlogmessage(), ArrlogCountererrors(), ArrSignStatus(), ArrSignNumbers(), ArrSignNames() As String
@@ -120,6 +119,7 @@ Public Class NU_Media
             StartRegister = System.Configuration.ConfigurationManager.AppSettings("StartRegister")
             RegisterCount = System.Configuration.ConfigurationManager.AppSettings("RegisterCount")
             SlaveIDCount = System.Configuration.ConfigurationManager.AppSettings("SlaveIDCount")
+            ReadDelay = System.Configuration.ConfigurationManager.AppSettings("ReadDelay")
 
             'Sign Line-1 parameter setup
             LotFullMessageLine1 = System.Configuration.ConfigurationManager.AppSettings("LotFullMessageLine1")
@@ -525,7 +525,7 @@ Public Class NU_Media
             Dim Registers(254) As Short
             Dim logMessage As String = String.Empty ' Declare logMessage at the beginning of the method
             Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
-            Dim delayInSeconds As Integer = 2
+            Dim delayInSeconds As Integer = ReadDelay
 
             ' Create a mapping of register numbers to labels
             Dim registerLabels As New Dictionary(Of Integer, String) From {
@@ -609,10 +609,13 @@ Public Class NU_Media
             End Try
 
             Console.WriteLine("CG_Read is running")
-            Await Task.Delay(delayInSeconds * 1000)
+            delayInSeconds = 1000 * ReadDelay
+            Await Task.Delay(delayInSeconds)
+            Debug.WriteLine(delayInSeconds)
         End While
 
         Console.WriteLine("CG_Read has been stopped.")
+
 
     End Function
 
