@@ -900,6 +900,7 @@ SendtoDisplay:
             f.Show()
             f.Text = "PasswordCheck - Exit"
             f.Location = Me.Location
+            cancellationTokenSource.Cancel()
         Catch ex As Exception
             Log("Error from btnExit-->" & ex.Message)
         End Try
