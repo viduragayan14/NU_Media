@@ -74,5 +74,50 @@ Public Class SQLConnect
         End Try
     End Function
 
-    
+    Public Function InsertOrUpdateValue(ByVal counterShortName As String, ByVal newValue As Integer) As String
+        Try
+            ' Check if the record exists
+            Dim ds As New DataSet()
+            Dim checkQuery As String = "SELECT COUNT(*) FROM ECCounters WHERE short_name = @CounterShortName"
+            Dim checkCmd As New SqlCommand(checkQuery, connection)
+            checkCmd.Parameters.AddWithValue("@CounterShortName", counterShortName)
+
+            Dim adapter As New SqlDataAdapter(checkCmd)
+            adapter.Fill(ds, "RecordCheck")
+
+            Dim recordExists As Boolean = CInt(ds.Tables(0).Rows(0)(0)) > 0
+
+            If recordExists Then
+                ' Record exists, perform an update
+                Dim updateQuery As String = "UPDATE ECCounters SET Value = @NewValue WHERE short_name = @CounterShortName"
+                Dim updateCmd As New SqlCommand(updateQuery, connection)
+                updateCmd.Parameters.AddWithValue("@NewValue", newValue)
+                updateCmd.Parameters.AddWithValue("@CounterShortName", counterShortName)
+
+                Dim rowsAffected As Integer = updateCmd.ExecuteNonQuery()
+                If rowsAffected > 0 Then
+                    Return "Value updated successfully."
+                Else
+                    Return "Failed to update value."
+                End If
+            Else
+                ' Record does not exist, perform an insert
+                Dim insertQuery As String = "INSERT INTO ECCounters (short_name, Value) VALUES (@CounterShortName, @NewValue)"
+                Dim insertCmd As New SqlCommand(insertQuery, connection)
+                insertCmd.Parameters.AddWithValue("@CounterShortName", counterShortName)
+                insertCmd.Parameters.AddWithValue("@NewValue", newValue)
+
+                Dim rowsInserted As Integer = insertCmd.ExecuteNonQuery()
+                If rowsInserted > 0 Then
+                    Return "Value inserted successfully."
+                Else
+                    Return "Failed to insert value."
+                End If
+            End If
+        Catch ex As Exception
+            Return $"Error: {ex.Message}"
+        End Try
+    End Function
+
+
 End Class
