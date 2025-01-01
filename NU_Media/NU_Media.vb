@@ -31,7 +31,7 @@ Public Class NU_Media
     Dim EnableSignLine2, LotOpenMessageLine2, AddLotnamewithLotOpenMessageLine2, LotFullMessageLine2, SendProtocolPrefixLine2, SendProtocolSufixLine2 As String     'Sign Line-2 parameter setup
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
-    Dim CarloGavazzi As Boolean 'Carlo Gavazzi parameter Setup'
+    Dim CarloGavazzi, EnhansedLogs As Boolean 'Carlo Gavazzi parameter Setup'
     Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
@@ -120,6 +120,7 @@ Public Class NU_Media
             RegisterCount = System.Configuration.ConfigurationManager.AppSettings("RegisterCount")
             SlaveIDCount = System.Configuration.ConfigurationManager.AppSettings("SlaveIDCount")
             ReadDelay = System.Configuration.ConfigurationManager.AppSettings("ReadDelay")
+            EnhansedLogs = System.Configuration.ConfigurationManager.AppSettings("EnhansedLogs")
 
             'Sign Line-1 parameter setup
             LotFullMessageLine1 = System.Configuration.ConfigurationManager.AppSettings("LotFullMessageLine1")
@@ -535,8 +536,6 @@ Public Class NU_Media
             {4015, "P"}
         }
 
-
-
             Try
                 ' Loop through each slave (1 to 16)
                 For slaveId As Integer = 1 To SlaveIDCount
@@ -558,12 +557,17 @@ Public Class NU_Media
 
                             ' Add register and value information to the ListBox and write to log file
                             logMessage = $"Slave #{slaveId} - Reg. # {registerAddress} ({registerLabel}): {registerValue}"
-                            CGLog(logMessage)
+                            If EnhansedLogs Then
+                                CGLog(logMessage)
+                            End If
+
 
                             ' Decode the binary representation of the value
                             Dim binaryString As String = Convert.ToString(registerValue, 2).PadLeft(16, "0"c)
                             logMessage = $"Binary: {binaryString}"
-                            CGLog(logMessage)
+                            If EnhansedLogs Then
+                                CGLog(logMessage)
+                            End If
 
                             ' Check each bit and identify which devices are ON
                             Dim activeDevices As New List(Of Integer)
@@ -576,10 +580,14 @@ Public Class NU_Media
                             ' Display the active devices for this register and write to log file
                             If activeDevices.Count > 0 Then
                                 logMessage = $"Active Devices: {String.Join(", ", activeDevices)}"
-                                CGLog(logMessage)
+                                If EnhansedLogs Then
+                                    CGLog(logMessage)
+                                End If
                             Else
                                 logMessage = "No devices are ON."
-                                CGLog(logMessage)
+                                If EnhansedLogs Then
+                                    CGLog(logMessage)
+                                End If
                             End If
 
                             ' Add the count of active devices for this register to the slave's total
@@ -588,7 +596,9 @@ Public Class NU_Media
 
                         ' Add the total active devices for the current slave
                         logMessage = $"Total Active Devices for Slave #{slaveId}: {totalActiveDevicesForSlave}"
-                        CGLog(logMessage)
+                        If EnhansedLogs Then
+                            CGLog(logMessage)
+                        End If
                         totalActiveDevicesAcrossSlaves += totalActiveDevicesForSlave
                     Else
                         logMessage = $"Error reading registers for Slave #{slaveId}: {Rslt}"
@@ -608,14 +618,9 @@ Public Class NU_Media
                 CGLog(logMessage)
             End Try
 
-            Console.WriteLine("CG_Read is running")
             delayInSeconds = 1000 * ReadDelay
             Await Task.Delay(delayInSeconds)
-            Debug.WriteLine(delayInSeconds)
         End While
-
-        Console.WriteLine("CG_Read has been stopped.")
-
 
     End Function
 
