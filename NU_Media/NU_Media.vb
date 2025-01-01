@@ -32,7 +32,7 @@ Public Class NU_Media
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
     Dim CarloGavazzi, EnhansedLogs As Boolean 'Carlo Gavazzi parameter Setup'
-    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay As String 'Carlo Gavazzi parameter Setup'
+    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay, CGShortCount As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
     ' Public logmessage, Startuplogmessage, Arrlogmessage(), ArrlogCountererrors(), ArrSignStatus(), ArrSignNumbers(), ArrSignNames() As String
@@ -121,6 +121,7 @@ Public Class NU_Media
             SlaveIDCount = System.Configuration.ConfigurationManager.AppSettings("SlaveIDCount")
             ReadDelay = System.Configuration.ConfigurationManager.AppSettings("ReadDelay")
             EnhansedLogs = System.Configuration.ConfigurationManager.AppSettings("EnhansedLogs")
+            CGShortCount = System.Configuration.ConfigurationManager.AppSettings("CGShortCount")
 
             'Sign Line-1 parameter setup
             LotFullMessageLine1 = System.Configuration.ConfigurationManager.AppSettings("LotFullMessageLine1")
@@ -611,6 +612,8 @@ Public Class NU_Media
 
                 ' Display the total number of active devices across all slaves and write to log file
                 logMessage = $"Total Active Devices Across All Slaves: {totalActiveDevicesAcrossSlaves}"
+                Dim result As String
+                result = SQL.InsertOrUpdateValue(CGShortCount, totalActiveDevicesAcrossSlaves)
                 CGLog(logMessage)
             Catch ex As Exception
                 ' Log the exception message
