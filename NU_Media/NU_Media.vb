@@ -32,7 +32,8 @@ Public Class NU_Media
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
     Dim CarloGavazzi, EnhansedLogs As Boolean 'Carlo Gavazzi parameter Setup'
-    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay As String 'Carlo Gavazzi parameter Setup'
+    Dim ReadDelay As Integer
+    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
     ' Public logmessage, Startuplogmessage, Arrlogmessage(), ArrlogCountererrors(), ArrSignStatus(), ArrSignNumbers(), ArrSignNames() As String
@@ -256,6 +257,41 @@ Public Class NU_Media
             dt.Columns.Add("ComPort")
             dt.Columns.Add("IPaddress")
             dt.Columns.Add("CounterName")
+
+            If ArrSignNumbers Is Nothing Then
+                Debug.WriteLine("Error: ArrSignNumbers is not initialized.")
+                Exit Sub
+            End If
+
+            If ArrSignNames Is Nothing Then
+                Debug.WriteLine("Error: ArrSignNames is not initialized.")
+                Exit Sub
+            End If
+
+            If ArrComPorts Is Nothing Then
+                Debug.WriteLine("Error: ArrComPorts is not initialized.")
+                Exit Sub
+            End If
+
+            If ArrIPaddresses Is Nothing Then
+                Debug.WriteLine("Error: ArrIPaddresses is not initialized.")
+                Exit Sub
+            End If
+
+            If ArrCounterShortNames Is Nothing Then
+                Debug.WriteLine("Error: ArrCounterShortNames is not initialized.")
+                Exit Sub
+            End If
+
+            ' Check if all arrays have the same length
+            If Not (ArrSignNumbers.Length = ArrSignNames.Length AndAlso
+                ArrSignNumbers.Length = ArrComPorts.Length AndAlso
+                ArrSignNumbers.Length = ArrIPaddresses.Length AndAlso
+                ArrSignNumbers.Length = ArrCounterShortNames.Length) Then
+
+                Debug.WriteLine("Error: Configuration arrays have inconsistent lengths.")
+                Exit Sub
+            End If
 
             For j = 0 To ArrSignNumbers.Length - 1
                 Dim dr As DataRow
@@ -586,7 +622,9 @@ Public Class NU_Media
                                 End If
                             Else
                                 logMessage = "No devices are ON."
-                                CGLog(logMessage)
+                                If EnhansedLogs Then
+                                    CGLog(logMessage)
+                                End If
                             End If
 
                             ' Add the count of active devices for this register to the slave's total
