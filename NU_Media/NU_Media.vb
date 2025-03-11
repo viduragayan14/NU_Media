@@ -32,7 +32,7 @@ Public Class NU_Media
     Dim EnableDirectiontoOpenLots, EnableCustomDirectiontoOpenLots, LotNamesWhereSignsAreInstalled, OpenLotDirectionPrefixLine2, AllLotsFullMessageLine2, OpenLotDirectionSequence As String    'Line-2- Direction messages open lots
     Dim SignNumbers, ComPorts, CounterShortNames, IPaddresses, SignNames As String     'General Sign parameter Setup
     Dim CarloGavazzi, EnhansedLogs As Boolean 'Carlo Gavazzi parameter Setup'
-    Dim Modbus_TCP_IP, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay, CGShortCount As String 'Carlo Gavazzi parameter Setup'
+    Dim Modbus_TCP_IP, Modbus_TCP_IP2, Modbus_TCP_Port, StartRegister, RegisterCount, SlaveIDCount, ReadDelay, CGShortCount As String 'Carlo Gavazzi parameter Setup'
 
     'Internal application variables
     ' Public logmessage, Startuplogmessage, Arrlogmessage(), ArrlogCountererrors(), ArrSignStatus(), ArrSignNumbers(), ArrSignNames() As String
@@ -115,6 +115,7 @@ Public Class NU_Media
             'Carlo Gavazzi Parameter Setup
             CarloGavazzi = System.Configuration.ConfigurationManager.AppSettings("CarloGavazzi")
             Modbus_TCP_IP = System.Configuration.ConfigurationManager.AppSettings("Modbus_TCP_IP")
+            Modbus_TCP_IP2 = System.Configuration.ConfigurationManager.AppSettings("Modbus_TCP_IP2")
             Modbus_TCP_Port = System.Configuration.ConfigurationManager.AppSettings("Modbus_TCP_Port")
             StartRegister = System.Configuration.ConfigurationManager.AppSettings("StartRegister")
             RegisterCount = System.Configuration.ConfigurationManager.AppSettings("RegisterCount")
@@ -489,6 +490,8 @@ Public Class NU_Media
 
 
         Dim CGResult As WSMBT.Result
+        Dim Modbus_IP As String
+        Modbus_IP = "192.168.26.252"
         WsmbtControl1.LicenseKey("356D-9FEA-7E14-6F9D-0569-FBA0")
         WsmbtControl1.Mode = WSMBT.Mode.TCP_IP
         WsmbtControl1.ConnectTimeout = 1000
@@ -507,7 +510,9 @@ Public Class NU_Media
             End If
 
         Else
+
             CGLog("Device Connected ")
+
             If CGConnect.InvokeRequired Then
                 CGConnect.Invoke(Sub()
                                      CGConnect.BackColor = Color.Lime
@@ -519,114 +524,249 @@ Public Class NU_Media
 
     End Sub
 
+    Public Sub CG_Connect2()
+
+
+        Dim CGResult As WSMBT.Result
+        WsmbtControl1.LicenseKey("356D-9FEA-7E14-6F9D-0569-FBA0")
+        WsmbtControl1.Mode = WSMBT.Mode.TCP_IP
+        WsmbtControl1.ConnectTimeout = 1000
+        WsmbtControl1.ResponseTimeout = 1000
+        CGResult = WsmbtControl1.Connect(Modbus_TCP_IP2, Modbus_TCP_Port)
+
+        If CGResult <> WSMBT.Result.SUCCESS Then
+
+            MessageBox.Show(WsmbtControl1.GetLastErrorString())
+            CGLog("Device Not Connected ")
+            If CGConnect2.InvokeRequired Then
+                CGConnect2.Invoke(Sub()
+                                      CGConnect2.BackColor = Color.Red
+                                      CGConnect2.Text = "Offline"
+                                  End Sub)
+            End If
+
+        Else
+            CGLog("Device Connected ")
+            If CGConnect2.InvokeRequired Then
+                CGConnect2.Invoke(Sub()
+                                      CGConnect2.BackColor = Color.Lime
+                                      CGConnect2.Text = "Online"
+                                  End Sub)
+            End If
+
+        End If
+
+    End Sub
+
     Public Async Function CG_Read(cancellationToken As CancellationToken) As Task
-        While Not cancellationToken.IsCancellationRequested
+        ' Define the list of IPs
+        Dim Modbus_IPs As String() = {Modbus_TCP_IP, Modbus_TCP_IP2}
 
-            Await Task.Run(Sub() CG_Connect())
+        ' Connect to both IPs
+        Await Task.Run(Sub() CG_Connect())
+        Await Task.Run(Sub() CG_Connect2())
 
-            Dim Registers(254) As Short
-            Dim logMessage As String = String.Empty ' Declare logMessage at the beginning of the method
-            Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
-            Dim delayInSeconds As Integer = ReadDelay
+        Try
+            While Not cancellationToken.IsCancellationRequested
+                Dim Registers(254) As Short
+                Dim logMessage As String = String.Empty ' Declare logMessage at the beginning
+                Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
+                Dim delayInMilliseconds As Integer = 1000 * ReadDelay
 
-            ' Create a mapping of register numbers to labels
-            Dim registerLabels As New Dictionary(Of Integer, String) From {
-            {4000, "A"}, {4001, "B"}, {4002, "C"}, {4003, "D"}, {4004, "E"},
-            {4005, "F"}, {4006, "G"}, {4007, "H"}, {4008, "I"}, {4009, "J"},
-            {4010, "K"}, {4011, "L"}, {4012, "M"}, {4013, "N"}, {4014, "O"},
-            {4015, "P"}
-        }
+                ' Create a mapping of register numbers to labels
+                Dim registerLabels As New Dictionary(Of Integer, String) From {
+                {4000, "A"}, {4001, "B"}, {4002, "C"}, {4003, "D"}, {4004, "E"},
+                {4005, "F"}, {4006, "G"}, {4007, "H"}, {4008, "I"}, {4009, "J"},
+                {4010, "K"}, {4011, "L"}, {4012, "M"}, {4013, "N"}, {4014, "O"},
+                {4015, "P"}
+            }
 
-            Try
-                ' Loop through each slave (1 to 16)
-                For slaveId As Integer = 1 To SlaveIDCount
-                    ' Send request to read registers for the current slave
-                    Dim Rslt As WSMBT.Result
+                ' Loop through each IP
+                For Each ip As String In Modbus_IPs
+                    logMessage = $"Connecting to Modbus Device at IP: {ip}"
+                    CGLog(logMessage)
 
-                    Rslt = WsmbtControl1.ReadInputRegisters(slaveId, CInt(StartRegister), CInt(RegisterCount), Registers)
+                    ' Connect to the Modbus device at this IP
+                    WsmbtControl1.Connect(ip, 502)
 
-                    If Rslt = WSMBT.Result.SUCCESS Then
-                        Dim totalActiveDevicesForSlave As Integer = 0 ' Total active devices for this slave
+                    ' Loop through each slave (1 to SlaveIDCount)
+                    For slaveId As Integer = 1 To SlaveIDCount
+                        ' Read registers
+                        Dim Rslt As WSMBT.Result = WsmbtControl1.ReadInputRegisters(slaveId, CInt(StartRegister), CInt(RegisterCount), Registers)
 
-                        ' Process each register for the current slave
-                        For t = 0 To CInt(RegisterCount) - 1
-                            Dim registerAddress As Integer = CInt(StartRegister) + t
-                            Dim registerValue As UShort = WsmbtControl1.RegisterToUInt16(Registers(t))
+                        If Rslt = WSMBT.Result.SUCCESS Then
+                            Dim totalActiveDevicesForSlave As Integer = 0 ' Total active devices for this slave
 
-                            ' Get the label for the register if it exists
-                            Dim registerLabel As String = If(registerLabels.ContainsKey(registerAddress), registerLabels(registerAddress), "Unknown")
+                            ' Process each register for the current slave
+                            For t = 0 To CInt(RegisterCount) - 1
+                                Dim registerAddress As Integer = CInt(StartRegister) + t
+                                Dim registerValue As UShort = WsmbtControl1.RegisterToUInt16(Registers(t))
 
-                            ' Add register and value information to the ListBox and write to log file
-                            logMessage = $"Slave #{slaveId} - Reg. # {registerAddress} ({registerLabel}): {registerValue}"
-                            If EnhansedLogs Then
-                                CGLog(logMessage)
-                            End If
+                                ' Get register label if available
+                                Dim registerLabel As String = If(registerLabels.ContainsKey(registerAddress), registerLabels(registerAddress), "Unknown")
 
+                                ' Log register value
+                                logMessage = $"[IP: {ip}] Slave #{slaveId} - Reg. # {registerAddress} ({registerLabel}): {registerValue}"
+                                If EnhansedLogs Then CGLog(logMessage)
 
-                            ' Decode the binary representation of the value
-                            Dim binaryString As String = Convert.ToString(registerValue, 2).PadLeft(16, "0"c)
-                            logMessage = $"Binary: {binaryString}"
-                            If EnhansedLogs Then
-                                CGLog(logMessage)
-                            End If
+                                ' Decode binary representation
+                                Dim binaryString As String = Convert.ToString(registerValue, 2).PadLeft(16, "0"c)
+                                logMessage = $"[IP: {ip}] Binary: {binaryString}"
+                                If EnhansedLogs Then CGLog(logMessage)
 
-                            ' Check each bit and identify which devices are ON
-                            Dim activeDevices As New List(Of Integer)
-                            For i As Integer = 0 To 7 ' For 8 devices per register
-                                If (registerValue And (1 << i)) <> 0 Then
-                                    activeDevices.Add(i + 1) ' Device numbers start from 1
-                                End If
+                                ' Identify active devices
+                                Dim activeDevices As New List(Of Integer)
+                                For i As Integer = 0 To 7
+                                    If (registerValue And (1 << i)) <> 0 Then
+                                        activeDevices.Add(i + 1)
+                                    End If
+                                Next
+
+                                ' Log active devices
+                                logMessage = If(activeDevices.Count > 0, $"[IP: {ip}] Active Devices: {String.Join(", ", activeDevices)}", $"[IP: {ip}] No devices are ON.")
+                                If EnhansedLogs Then CGLog(logMessage)
+
+                                ' Update active device count
+                                totalActiveDevicesForSlave += activeDevices.Count
                             Next
 
-                            ' Display the active devices for this register and write to log file
-                            If activeDevices.Count > 0 Then
-                                logMessage = $"Active Devices: {String.Join(", ", activeDevices)}"
-                                If EnhansedLogs Then
-                                    CGLog(logMessage)
-                                End If
-                            Else
-                                logMessage = "No devices are ON."
-                                If EnhansedLogs Then
-                                    CGLog(logMessage)
-                                End If
-                            End If
+                            ' Log total active devices for the slave
+                            logMessage = $"[IP: {ip}] Total Active Devices for Slave #{slaveId}: {totalActiveDevicesForSlave}"
+                            If EnhansedLogs Then CGLog(logMessage)
 
-                            ' Add the count of active devices for this register to the slave's total
-                            totalActiveDevicesForSlave += activeDevices.Count
-                        Next
-
-                        ' Add the total active devices for the current slave
-                        logMessage = $"Total Active Devices for Slave #{slaveId}: {totalActiveDevicesForSlave}"
-                        If EnhansedLogs Then
+                            totalActiveDevicesAcrossSlaves += totalActiveDevicesForSlave
+                        Else
+                            ' Log error message
+                            logMessage = $"[IP: {ip}] Error reading registers for Slave #{slaveId}: {Rslt}"
                             CGLog(logMessage)
                         End If
-                        totalActiveDevicesAcrossSlaves += totalActiveDevicesForSlave
-                    Else
-                        logMessage = $"Error reading registers for Slave #{slaveId}: {Rslt}"
-                        CGLog(logMessage)
-                    End If
+                    Next
 
-                    ' Close the connection for the current slave
+                    ' Close connection for this IP
                     WsmbtControl1.Close()
                 Next
 
-                ' Display the total number of active devices across all slaves and write to log file
-                logMessage = $"Total Active Devices Across All Slaves: {totalActiveDevicesAcrossSlaves}"
-                Dim result As String
-                result = SQL.InsertOrUpdateValue(CGShortCount, totalActiveDevicesAcrossSlaves)
+                ' Log total active devices across all slaves
+                logMessage = $"Total Active Devices Across All IPs and Slaves: {totalActiveDevicesAcrossSlaves}"
                 CGLog(logMessage)
-            Catch ex As Exception
-                ' Log the exception message
-                logMessage = "Error: " & ex.Message
-                CGLog(logMessage)
-            End Try
 
-            delayInSeconds = 1000 * ReadDelay
-            Await Task.Delay(delayInSeconds)
-        End While
+                ' Update database
+                Dim result As String = SQL.UpdateCounterValueAndOffset(CGShortCount, totalActiveDevicesAcrossSlaves)
 
+                ' Check for cancellation before waiting
+                If cancellationToken.IsCancellationRequested Then Exit While
+
+                ' Wait before next iteration
+                Await Task.Delay(delayInMilliseconds, cancellationToken)
+            End While
+        Catch ex As Exception
+            ' Log detailed exception
+            logmessage = $"Error: {ex.Message} | StackTrace: {ex.StackTrace}"
+            CGLog(logmessage)
+        Finally
+            ' Close connection after loop ends
+            WsmbtControl1.Close()
+        End Try
     End Function
 
+
+    'Public Async Function CG_Read(cancellationToken As CancellationToken) As Task
+    '    ' Connect once before entering the loop
+    '    Await Task.Run(Sub() CG_Connect())
+    '    Await Task.Run(Sub() CG_Connect2())
+    '    logmessage = $"Connecting to Modbus Device at IP: {Modbus_TCP_IP}"
+    '    CGLog(logmessage)
+
+    '    Try
+    '        While Not cancellationToken.IsCancellationRequested
+    '            Dim Registers(254) As Short
+    '            Dim logMessage As String = String.Empty ' Declare logMessage at the beginning
+    '            Dim totalActiveDevicesAcrossSlaves As Integer = 0 ' Total active devices across all slaves
+    '            Dim delayInMilliseconds As Integer = 1000 * ReadDelay
+
+    '            ' Create a mapping of register numbers to labels
+    '            Dim registerLabels As New Dictionary(Of Integer, String) From {
+    '            {4000, "A"}, {4001, "B"}, {4002, "C"}, {4003, "D"}, {4004, "E"},
+    '            {4005, "F"}, {4006, "G"}, {4007, "H"}, {4008, "I"}, {4009, "J"},
+    '            {4010, "K"}, {4011, "L"}, {4012, "M"}, {4013, "N"}, {4014, "O"},
+    '            {4015, "P"}
+    '        }
+
+    '            ' Loop through each slave (1 to SlaveIDCount)
+    '            For slaveId As Integer = 1 To SlaveIDCount
+    '                ' Read registers
+    '                Dim Rslt As WSMBT.Result = WsmbtControl1.ReadInputRegisters(slaveId, CInt(StartRegister), CInt(RegisterCount), Registers)
+
+    '                If Rslt = WSMBT.Result.SUCCESS Then
+    '                    Dim totalActiveDevicesForSlave As Integer = 0 ' Total active devices for this slave
+
+    '                    ' Process each register for the current slave
+    '                    For t = 0 To CInt(RegisterCount) - 1
+    '                        Dim registerAddress As Integer = CInt(StartRegister) + t
+    '                        Dim registerValue As UShort = WsmbtControl1.RegisterToUInt16(Registers(t))
+
+    '                        ' Get register label if available
+    '                        Dim registerLabel As String = If(registerLabels.ContainsKey(registerAddress), registerLabels(registerAddress), "Unknown")
+
+    '                        ' Log register value
+    '                        logMessage = $"Slave #{slaveId} - Reg. # {registerAddress} ({registerLabel}): {registerValue}"
+    '                        If EnhansedLogs Then CGLog(logMessage)
+
+    '                        ' Decode binary representation
+    '                        Dim binaryString As String = Convert.ToString(registerValue, 2).PadLeft(16, "0"c)
+    '                        logMessage = $"Binary: {binaryString}"
+    '                        If EnhansedLogs Then CGLog(logMessage)
+
+    '                        ' Identify active devices
+    '                        Dim activeDevices As New List(Of Integer)
+    '                        For i As Integer = 0 To 7
+    '                            If (registerValue And (1 << i)) <> 0 Then
+    '                                activeDevices.Add(i + 1)
+    '                            End If
+    '                        Next
+
+    '                        ' Log active devices
+    '                        logMessage = If(activeDevices.Count > 0, $"Active Devices: {String.Join(", ", activeDevices)}", "No devices are ON.")
+    '                        If EnhansedLogs Then CGLog(logMessage)
+
+    '                        ' Update active device count
+    '                        totalActiveDevicesForSlave += activeDevices.Count
+    '                    Next
+
+    '                    ' Log total active devices for the slave
+    '                    logMessage = $"Total Active Devices for Slave #{slaveId}: {totalActiveDevicesForSlave}"
+    '                    If EnhansedLogs Then CGLog(logMessage)
+
+    '                    totalActiveDevicesAcrossSlaves += totalActiveDevicesForSlave
+    '                Else
+    '                    ' Log error message
+    '                    logMessage = $"Error reading registers for Slave #{slaveId}: {Rslt}"
+    '                    CGLog(logMessage)
+    '                End If
+    '            Next
+
+    '            ' Log total active devices across all slaves
+    '            logMessage = $"Total Active Devices Across All Slaves: {totalActiveDevicesAcrossSlaves}"
+    '            CGLog(logMessage)
+
+    '            ' Update database
+    '            Dim result As String = SQL.UpdateCounterValueAndOffset(CGShortCount, totalActiveDevicesAcrossSlaves)
+
+    '            ' Check for cancellation before waiting
+    '            If cancellationToken.IsCancellationRequested Then Exit While
+
+    '            ' Wait before next iteration
+    '            Await Task.Delay(delayInMilliseconds, cancellationToken)
+    '        End While
+    '    Catch ex As Exception
+    '        ' Log detailed exception
+    '        logmessage = $"Error: {ex.Message} | StackTrace: {ex.StackTrace}"
+    '        CGLog(logmessage)
+    '    Finally
+    '        ' Close connection after loop ends
+    '        WsmbtControl1.Close()
+    '    End Try
+    'End Function
     Public Sub AvailableSpaces()
 
         'This function is activated by the timer 

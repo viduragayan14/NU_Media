@@ -119,5 +119,33 @@ Public Class SQLConnect
         End Try
     End Function
 
+    Public Function UpdateCounterValueAndOffset(ByVal counterShortName As String, ByVal newValue As Integer) As String
+        Try
+            ' Ensure the connection is open
+            If connection.State <> ConnectionState.Open Then
+                connection.Open()
+            End If
+
+            ' Update query
+            Dim updateQuery As String = "UPDATE [ECounting].[dbo].[ECCounters] SET [value] = @NewValue, [offset] = @NewValue WHERE short_name = @CounterShortName"
+
+            Using updateCmd As New SqlCommand(updateQuery, connection)
+                updateCmd.Parameters.AddWithValue("@NewValue", newValue)
+                updateCmd.Parameters.AddWithValue("@CounterShortName", counterShortName)
+
+                Dim rowsAffected As Integer = updateCmd.ExecuteNonQuery()
+
+                If rowsAffected > 0 Then
+                    Return "Value and offset updated successfully."
+                Else
+                    Return "No records were updated. Check if short_name exists."
+                End If
+            End Using
+
+        Catch ex As Exception
+            Return $"Error: {ex.Message}"
+        End Try
+    End Function
+
 
 End Class
