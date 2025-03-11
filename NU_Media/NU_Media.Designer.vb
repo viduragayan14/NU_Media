@@ -186,7 +186,9 @@ Partial Class NU_Media
         Me.btnExit = New System.Windows.Forms.Button()
         Me.ToolTip1 = New System.Windows.Forms.ToolTip(Me.components)
         Me.Label24 = New System.Windows.Forms.Label()
-        Me.CGConnect = New System.Windows.Forms.RichTextBox()
+        Me.CGConnect2 = New System.Windows.Forms.RichTextBox()
+        Me.Label25 = New System.Windows.Forms.Label()
+        Me.CGConnect1 = New System.Windows.Forms.RichTextBox()
         Me.GroupBox1.SuspendLayout()
         Me.Display9.SuspendLayout()
         Me.Display10.SuspendLayout()
@@ -1770,23 +1772,44 @@ Partial Class NU_Media
         'Label24
         '
         Me.Label24.AutoSize = True
-        Me.Label24.Location = New System.Drawing.Point(267, 45)
+        Me.Label24.Location = New System.Drawing.Point(364, 29)
         Me.Label24.Name = "Label24"
-        Me.Label24.Size = New System.Drawing.Size(72, 13)
+        Me.Label24.Size = New System.Drawing.Size(81, 13)
         Me.Label24.TabIndex = 37
-        Me.Label24.Text = "Carlo Gavazzi"
+        Me.Label24.Text = "Carlo Gavazzi 2"
         '
-        'CGConnect
+        'CGConnect2
         '
-        Me.CGConnect.BackColor = System.Drawing.Color.Lime
-        Me.CGConnect.Location = New System.Drawing.Point(360, 42)
-        Me.CGConnect.Name = "CGConnect"
-        Me.CGConnect.ReadOnly = True
-        Me.CGConnect.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth
-        Me.CGConnect.Size = New System.Drawing.Size(98, 22)
-        Me.CGConnect.TabIndex = 38
-        Me.CGConnect.TabStop = False
-        Me.CGConnect.Text = "Online"
+        Me.CGConnect2.BackColor = System.Drawing.Color.Lime
+        Me.CGConnect2.Location = New System.Drawing.Point(360, 45)
+        Me.CGConnect2.Name = "CGConnect2"
+        Me.CGConnect2.ReadOnly = True
+        Me.CGConnect2.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth
+        Me.CGConnect2.Size = New System.Drawing.Size(98, 22)
+        Me.CGConnect2.TabIndex = 38
+        Me.CGConnect2.TabStop = False
+        Me.CGConnect2.Text = "Online"
+        '
+        'Label25
+        '
+        Me.Label25.AutoSize = True
+        Me.Label25.Location = New System.Drawing.Point(252, 29)
+        Me.Label25.Name = "Label25"
+        Me.Label25.Size = New System.Drawing.Size(75, 13)
+        Me.Label25.TabIndex = 37
+        Me.Label25.Text = "Carlo Gavazzi "
+        '
+        'CGConnect1
+        '
+        Me.CGConnect1.BackColor = System.Drawing.Color.Lime
+        Me.CGConnect1.Location = New System.Drawing.Point(241, 45)
+        Me.CGConnect1.Name = "CGConnect1"
+        Me.CGConnect1.ReadOnly = True
+        Me.CGConnect1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedBoth
+        Me.CGConnect1.Size = New System.Drawing.Size(98, 22)
+        Me.CGConnect1.TabIndex = 38
+        Me.CGConnect1.TabStop = False
+        Me.CGConnect1.Text = "Online"
         '
         'NU_Media
         '
@@ -1794,7 +1817,9 @@ Partial Class NU_Media
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.Silver
         Me.ClientSize = New System.Drawing.Size(489, 462)
-        Me.Controls.Add(Me.CGConnect)
+        Me.Controls.Add(Me.CGConnect1)
+        Me.Controls.Add(Me.CGConnect2)
+        Me.Controls.Add(Me.Label25)
         Me.Controls.Add(Me.Label24)
         Me.Controls.Add(Me.btnExit)
         Me.Controls.Add(Me.VMStabs)
@@ -2005,5 +2030,7 @@ Partial Class NU_Media
     Friend WithEvents TxtSignNumber As System.Windows.Forms.TextBox
     Friend WithEvents BtnDeleteSign As System.Windows.Forms.Button
     Friend WithEvents Label24 As Label
-    Friend WithEvents CGConnect As RichTextBox
+    Friend WithEvents CGConnect2 As RichTextBox
+    Friend WithEvents Label25 As Label
+    Friend WithEvents CGConnect1 As RichTextBox
 End Class

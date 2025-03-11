@@ -502,22 +502,22 @@ Public Class NU_Media
 
             MessageBox.Show(WsmbtControl1.GetLastErrorString())
             CGLog("Device Not Connected ")
-            If CGConnect.InvokeRequired Then
-                CGConnect.Invoke(Sub()
-                                     CGConnect.BackColor = Color.Red
-                                     CGConnect.Text = "Offline"
-                                 End Sub)
+            If CGConnect1.InvokeRequired Then
+                CGConnect1.Invoke(Sub()
+                                      CGConnect1.BackColor = Color.Red
+                                      CGConnect1.Text = "Offline"
+                                  End Sub)
             End If
 
         Else
 
             CGLog("Device Connected ")
 
-            If CGConnect.InvokeRequired Then
-                CGConnect.Invoke(Sub()
-                                     CGConnect.BackColor = Color.Lime
-                                     CGConnect.Text = "Online"
-                                 End Sub)
+            If CGConnect1.InvokeRequired Then
+                CGConnect1.Invoke(Sub()
+                                      CGConnect1.BackColor = Color.Lime
+                                      CGConnect1.Text = "Online"
+                                  End Sub)
             End If
 
         End If
